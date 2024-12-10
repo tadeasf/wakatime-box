@@ -15,10 +15,11 @@ function loadConfiguration() {
     WAKATIME_BASE_URL: core.getInput('WAKATIME_BASE_URL', {required: false}) || DEFAULT_WAKATIME_BASE_URL,
     WAKA_API_KEY: core.getInput('WAKA_API_KEY', {required: true}),
     GIST_ID: core.getInput('GIST_ID', {required: true}),
-    DATE_RANGE: core.getInput('DATE_RANGE', {required: false}) || 'last_30_days',
+    DATE_RANGE: core.getInput('DATE_RANGE', {required: false}) || 'last_7_days',
     PRINT_SUMMARY: core.getBooleanInput('PRINT_SUMMARY', {required: true}),
     USE_OLD_FORMAT: core.getBooleanInput('USE_OLD_FORMAT', {required: false}),
     MAX_LANGUAGES: Number(core.getInput('MAX_LANGUAGES', {required: false}) || 5),
+    MAX_PROJECTS: Number(core.getInput('MAX_PROJECTS', {required: false}) || 5),
   };
 }
 
@@ -41,22 +42,33 @@ async function fetchStatistics(httpClient: HttpClient, wakatimeBaseURL: string, 
 // Add constant for allowed languages (case-insensitive)
 const ALLOWED_LANGUAGES = ['python', 'go', 'typescript', 'javascript'];
 
-function generateSummary(items: any[], maxItems: number) {
-  // Filter and process languages
-  const filteredItems = items.filter(item => 
-    ALLOWED_LANGUAGES.includes(item.name.toLowerCase())
-  );
-  
-  // Sort filtered items by total_seconds in descending order
-  const sortedItems = [...filteredItems].sort((a, b) => b.total_seconds - a.total_seconds);
-  
-  // Take only the top N items
-  const topItems = sortedItems.slice(0, maxItems);
-  
-  return topItems.map(item => {
-    const {name, percent, total_seconds} = item;
-    return formatLine(name, total_seconds, percent);
-  });
+function generateSummary(items: any[], maxItems: number, useOldFormat: boolean, isProject: boolean = false) {
+  if (!isProject) {
+    // Filter and process languages
+    const filteredItems = items.filter(item => 
+      ALLOWED_LANGUAGES.includes(item.name.toLowerCase())
+    );
+    
+    // Sort filtered items by total_seconds in descending order
+    const sortedItems = [...filteredItems].sort((a, b) => b.total_seconds - a.total_seconds);
+    
+    // Take only the top N items
+    const topItems = sortedItems.slice(0, maxItems);
+    
+    return topItems.map(item => {
+      const {name, percent, total_seconds} = item;
+      return formatLine(name, total_seconds, percent, useOldFormat, false);
+    });
+  } else {
+    // Projects remain unchanged
+    const sortedItems = [...items].sort((a, b) => b.total_seconds - a.total_seconds);
+    const topItems = sortedItems.slice(0, maxItems);
+    
+    return topItems.map(item => {
+      const {name, percent, total_seconds} = item;
+      return formatLine(name, total_seconds, percent, useOldFormat, true);
+    });
+  }
 }
 
 function createSummaryTable() {
@@ -70,7 +82,9 @@ async function processSummary({
   GIST_ID,
   DATE_RANGE,
   PRINT_SUMMARY,
+  USE_OLD_FORMAT,
   MAX_LANGUAGES,
+  MAX_PROJECTS
 }) {
   const httpClient = new HttpClient('WakaTime-Gist/1.3 +https://github.com/marketplace/actions/wakatime-gist');
   const stats = await fetchStatistics(httpClient, WAKATIME_BASE_URL, DATE_RANGE, WAKA_API_KEY);
@@ -79,17 +93,22 @@ async function processSummary({
     return;
   }
 
-  const languages = generateSummary(stats.languages || [], MAX_LANGUAGES);
+  const languages = generateSummary(stats.languages || [], MAX_LANGUAGES, USE_OLD_FORMAT);
+  const projects = generateSummary(stats.projects || [], MAX_PROJECTS, USE_OLD_FORMAT, true);
 
   const updateDate = new Date().toLocaleDateString('en-us', {day: 'numeric', year: 'numeric', month: 'short'});
   const title = generateTitle(DATE_RANGE, updateDate);
 
-  if (languages.length === 0) {
+  if (languages.length === 0 && projects.length === 0) {
     console.log('No statistics for the last time period. Gist not updated');
     return;
   }
 
-  const content = languages.join('\n');
+  // Combine languages and projects with a separator
+  const content = [
+    ...languages,
+    ...projects
+  ].join('\n');
 
   const octokit = new Octokit({auth: GH_TOKEN});
   const gist = await octokit.gists.get({gist_id: GIST_ID}).catch(error => {
@@ -133,7 +152,7 @@ async function processSummary({
     // Local environment output
     console.log('\nResults:');
     console.log('✔ Statistics received');
-    console.log(' Gist updated');
+    console.log('�� Gist updated');
     console.log('\nWakaTime-Gist/2.0');
   }
 }

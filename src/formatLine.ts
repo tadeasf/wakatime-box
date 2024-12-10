@@ -1,4 +1,4 @@
-import { getLanguageIcon } from './languageIcons';
+import { getLanguageIcon, getProjectIcon } from './languageIcons';
 
 const CONSTANTS = {
   ICONS: {
@@ -42,13 +42,20 @@ function padWithDots(text: string, targetLength: number): string {
   return `${text}${dots}`;
 }
 
-export default function formatLine(name: string, totalSeconds: number, percent: number) {
-  const icon = getLanguageIcon(name);
+export default function formatLine(name: string, totalSeconds: number, percent: number, useOldFormat: boolean, isProject: boolean = false) {
+  const icon = isProject ? getProjectIcon() : getLanguageIcon(name);
   const formattedTime = formatTime(totalSeconds);
   const roundedPercent = Math.round(percent);
   const progressBar = generateBarChart(percent);
   
-  const paddedName = padWithDots(icon, CONSTANTS.LENGTHS.NAME_PADDING);
+  let displayName;
+  if (isProject) {
+    displayName = `${icon} ${name}`; // Include project name after icon
+  } else {
+    displayName = icon; // For languages, just use the icon (which includes the name)
+  }
+  
+  const paddedName = padWithDots(displayName, CONSTANTS.LENGTHS.NAME_PADDING);
   
   return `${paddedName} ${progressBar} ${roundedPercent}${CONSTANTS.SYMBOLS.PERCENT} ${CONSTANTS.ICONS.TIME} ${formattedTime}`;
 }
