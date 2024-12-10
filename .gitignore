@@ -4,3 +4,4 @@ node_modules
 .env
 /dist/formatLine.js
 .vscode/settings.json
+.DS_Store

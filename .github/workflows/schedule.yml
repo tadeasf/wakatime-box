@@ -17,7 +17,9 @@ jobs:
           # SUPPORTED: last_7_days, last_30_days, last_6_months, last_year
           INPUT_DATE_RANGE: last_7_days
           # NUMBER OF LANGUAGES DISPLAYED
-          INPUT_MAX_RESULT: 5
+          INPUT_MAX_LANGUAGES: 2
+          # NUMBER OF PROJECTS DISPLAYED
+          INPUT_MAX_PROJECTS: 2
           #
           INPUT_PRINT_SUMMARY: true
           INPUT_USE_OLD_FORMAT: false
