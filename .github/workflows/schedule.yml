@@ -13,18 +13,13 @@ jobs:
 
       - name: wakatime-gist
         uses: abordage/wakatime-box@master
-        env:
-          # SUPPORTED: last_7_days, last_30_days, last_6_months, last_year
-          INPUT_DATE_RANGE: last_7_days
-          # NUMBER OF LANGUAGES DISPLAYED
-          INPUT_MAX_LANGUAGES: 5
-          # NUMBER OF PROJECTS DISPLAYED
-          INPUT_MAX_PROJECTS: 5
-          #
-          INPUT_PRINT_SUMMARY: true
-          INPUT_USE_OLD_FORMAT: false
-
-          INPUT_GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          INPUT_WAKA_API_KEY: ${{ secrets.WAKA_API_KEY }}
-          INPUT_GIST_ID: ${{ secrets.GIST_ID }}
-          INPUT_WAKATIME_BASE_URL: ${{ secrets.WAKATIME_BASE_URL }}
+        with:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          WAKA_API_KEY: ${{ secrets.WAKA_API_KEY }}
+          GIST_ID: ${{ secrets.GIST_ID }}
+          WAKATIME_BASE_URL: ${{ secrets.WAKATIME_BASE_URL }}
+          DATE_RANGE: 'last_7_days'
+          MAX_LANGUAGES: 5
+          MAX_PROJECTS: 5
+          PRINT_SUMMARY: true
+          USE_OLD_FORMAT: false

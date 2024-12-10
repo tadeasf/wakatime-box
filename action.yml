@@ -3,20 +3,39 @@ author: "abordage"
 description: "Show your WakaTime statistics in a pinned gist for your GitHub profile"
 
 inputs:
-  INPUT_GH_TOKEN:
+  GH_TOKEN:
     description: 'GitHub token'
     required: true
-
-  INPUT_WAKA_API_KEY:
+  WAKA_API_KEY:
     description: 'API key for your WakaTime account'
     required: true
-
-  INPUT_GIST_ID:
+  GIST_ID:
     description: 'Gist Id'
     required: true
-
-  INPUT_PRINT_SUMMARY:
-    default: true
+  WAKATIME_BASE_URL:
+    description: 'WakaTime API base URL'
+    required: false
+    default: 'https://wakatime.com/api/v1'
+  DATE_RANGE:
+    description: 'Date range for statistics'
+    required: false
+    default: 'last_7_days'
+  MAX_LANGUAGES:
+    description: 'Maximum number of languages to display'
+    required: false
+    default: '5'
+  MAX_PROJECTS:
+    description: 'Maximum number of projects to display'
+    required: false
+    default: '5'
+  PRINT_SUMMARY:
+    description: 'Whether to print summary'
+    required: false
+    default: 'true'
+  USE_OLD_FORMAT:
+    description: 'Use old format for output'
+    required: false
+    default: 'false'
 
 runs:
   using: "node20"
