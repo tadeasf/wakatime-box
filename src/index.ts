@@ -23,11 +23,40 @@ function loadConfiguration() {
   };
 }
 
-function generateTitle(range: string, updateDate: string) {
-  let title = 'latest';
-  if (range === 'last_7_days') title = 'weekly';
-  else if (range === 'last_30_days') title = 'monthly';
-  return `My ${title} stack [update ${updateDate}]`;
+function generateTitle(range: string) {
+  const formatDate = (date: Date): string => {
+    return date.toLocaleDateString('en-us', {
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const endDate = new Date();
+  const startDate = new Date();
+  let title = '';
+
+  switch (range) {
+  case 'last_7_days':
+    startDate.setDate(endDate.getDate() - 7);
+    title = 'Weekly';
+    break;
+  case 'last_30_days':
+    startDate.setDate(endDate.getDate() - 30);
+    title = 'Monthly';
+    break;
+  case 'last_6_months':
+    startDate.setMonth(endDate.getMonth() - 6);
+    title = '6-Month';
+    break;
+  case 'last_year':
+    startDate.setFullYear(endDate.getFullYear() - 1);
+    title = 'Yearly';
+    break;
+  default:
+    title = 'Latest';
+  }
+
+  return `${title} stats [${formatDate(startDate)} - ${formatDate(endDate)}]`;
 }
 
 async function fetchStatistics(httpClient: HttpClient, wakatimeBaseURL: string, range: string, apiKey: string) {
@@ -39,36 +68,29 @@ async function fetchStatistics(httpClient: HttpClient, wakatimeBaseURL: string, 
   return response.result?.data;
 }
 
-// Add constant for allowed languages (case-insensitive)
-const ALLOWED_LANGUAGES = ['python', 'go', 'typescript', 'javascript'];
+// Modified to handle case variations
+const ALLOWED_LANGUAGES = new Set(['python', 'go', 'typescript', 'javascript', 'rust', 'docker', 'bash', 'sh']);
 
-function generateSummary(items: any[], maxItems: number, useOldFormat: boolean, isProject: boolean = false) {
-  if (!isProject) {
-    // Filter and process languages
-    const filteredItems = items.filter(item => 
-      ALLOWED_LANGUAGES.includes(item.name.toLowerCase())
-    );
-    
-    // Sort filtered items by total_seconds in descending order
-    const sortedItems = [...filteredItems].sort((a, b) => b.total_seconds - a.total_seconds);
-    
-    // Take only the top N items
-    const topItems = sortedItems.slice(0, maxItems);
-    
-    return topItems.map(item => {
-      const {name, percent, total_seconds} = item;
-      return formatLine(name, total_seconds, percent, useOldFormat, false);
-    });
-  } else {
-    // Projects remain unchanged
-    const sortedItems = [...items].sort((a, b) => b.total_seconds - a.total_seconds);
-    const topItems = sortedItems.slice(0, maxItems);
-    
-    return topItems.map(item => {
-      const {name, percent, total_seconds} = item;
-      return formatLine(name, total_seconds, percent, useOldFormat, true);
-    });
-  }
+function generateSummary(items: any[], maxItems: number, useOldFormat: boolean) {
+  // Filter and process languages with case-insensitive comparison
+  const filteredItems = items.filter(item => 
+    ALLOWED_LANGUAGES.has(item.name.toLowerCase())
+  );
+  
+  // Add debug logging
+  console.log('Available languages:', items.map(item => item.name));
+  console.log('Filtered languages:', filteredItems.map(item => item.name));
+  
+  // Sort filtered items by total_seconds in descending order
+  const sortedItems = [...filteredItems].sort((a, b) => b.total_seconds - a.total_seconds);
+  
+  // Take only the top N items
+  const topItems = sortedItems.slice(0, maxItems);
+  
+  return topItems.map(item => {
+    const {name, percent, total_seconds} = item;
+    return formatLine(name, total_seconds, percent, useOldFormat);
+  });
 }
 
 function createSummaryTable() {
@@ -84,7 +106,6 @@ async function processSummary({
   PRINT_SUMMARY,
   USE_OLD_FORMAT,
   MAX_LANGUAGES,
-  MAX_PROJECTS
 }) {
   const httpClient = new HttpClient('WakaTime-Gist/1.3 +https://github.com/marketplace/actions/wakatime-gist');
   const stats = await fetchStatistics(httpClient, WAKATIME_BASE_URL, DATE_RANGE, WAKA_API_KEY);
@@ -94,21 +115,15 @@ async function processSummary({
   }
 
   const languages = generateSummary(stats.languages || [], MAX_LANGUAGES, USE_OLD_FORMAT);
-  const projects = generateSummary(stats.projects || [], MAX_PROJECTS, USE_OLD_FORMAT, true);
 
-  const updateDate = new Date().toLocaleDateString('en-us', {day: 'numeric', year: 'numeric', month: 'short'});
-  const title = generateTitle(DATE_RANGE, updateDate);
+  const title = generateTitle(DATE_RANGE);
 
-  if (languages.length === 0 && projects.length === 0) {
+  if (languages.length === 0) {
     console.log('No statistics for the last time period. Gist not updated');
     return;
   }
 
-  // Combine languages and projects with a separator
-  const content = [
-    ...languages,
-    ...projects
-  ].join('\n');
+  const content = languages.join('\n');
 
   const octokit = new Octokit({auth: GH_TOKEN});
   const gist = await octokit.gists.get({gist_id: GIST_ID}).catch(error => {
@@ -152,7 +167,7 @@ async function processSummary({
     // Local environment output
     console.log('\nResults:');
     console.log('✔ Statistics received');
-    console.log('�� Gist updated');
+    console.log(' Gist updated');
     console.log('\nWakaTime-Gist/2.0');
   }
 }
