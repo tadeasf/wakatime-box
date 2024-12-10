@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: wakatime-gist
-        uses: abordage/wakatime-box@master
+        uses: tadeasf/wakatime-box@master
         with:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           WAKA_API_KEY: ${{ secrets.WAKA_API_KEY }}
